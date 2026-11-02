@@ -26,25 +26,38 @@ test('QR mode exposes the QR payload when WhatsApp emits it', async () => {
   assert.equal(manager.publicStatus().qr, 'qr-payload');
 });
 
-test('phone-code mode waits for the socket connecting event before requesting a code', async () => {
+test('phone-code mode waits for the WhatsApp QR update before requesting a code', async () => {
   const { manager, events, calls } = createHarness();
   await manager.start('code', '263771234567');
+  events.emit('connection.update', { connection: 'connecting' });
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(calls, []);
-  events.emit('connection.update', { connection: 'connecting' });
+  events.emit('connection.update', { qr: 'pairing-trigger-payload' });
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(calls, ['263771234567']);
   assert.equal(manager.publicStatus().status, 'code_ready');
   assert.equal(manager.publicStatus().pairingCode, 'ABCD-1234');
 });
 
-test('phone-code mode requests a code only once when connecting is emitted repeatedly', async () => {
+test('phone-code mode requests a code only once when WhatsApp emits repeated QR updates', async () => {
   const { manager, events, calls } = createHarness();
   await manager.start('code', '263771234567');
-  events.emit('connection.update', { connection: 'connecting' });
-  events.emit('connection.update', { connection: 'connecting' });
+  events.emit('connection.update', { qr: 'first-qr' });
+  events.emit('connection.update', { qr: 'second-qr' });
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(calls, ['263771234567']);
+});
+
+test('uses the Chrome browser identity used by 42 MD BOT', async () => {
+  const events = new EventEmitter();
+  let socketOptions;
+  const manager = new PairingManager({
+    authDir: '/tmp/auth',
+    loadAuthState: async () => ({ state: { creds: { registered: false } }, saveCreds: async () => {} }),
+    createSocket: (options) => { socketOptions = options; return { ev: events }; }
+  });
+  await manager.start('qr');
+  assert.deepEqual(socketOptions.browser, ['RIMURU TEMPEST MD', 'Chrome', '1.0.0']);
 });
 
 test('logged-out connection close exposes an actionable error instead of reconnecting stale credentials', async () => {
