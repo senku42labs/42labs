@@ -57,3 +57,36 @@ test('restore reconnects only when saved credentials are registered', async () =
   const { manager } = createHarness({ registered: false });
   assert.equal((await manager.restore()).status, 'disconnected');
 });
+
+test('restarts the WhatsApp socket after restartRequired (515)', async () => {
+  const firstEvents = new EventEmitter();
+  const secondEvents = new EventEmitter();
+  let socketCount = 0;
+  const manager = new PairingManager({
+    authDir: '/tmp/auth',
+    loadAuthState: async () => ({ state: { creds: { registered: true } }, saveCreds: async () => {} }),
+    createSocket: () => ({ ev: ++socketCount === 1 ? firstEvents : secondEvents })
+  });
+  await manager.start('qr');
+  firstEvents.emit('connection.update', {
+    connection: 'close',
+    lastDisconnect: { error: { message: 'restart required', output: { statusCode: 515 } } }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(socketCount, 2);
+  secondEvents.emit('connection.update', { connection: 'open' });
+  assert.equal(manager.publicStatus().status, 'connected');
+});
+
+test('uses the dynamically fetched WhatsApp Web version when creating a socket', async () => {
+  const events = new EventEmitter();
+  let socketOptions;
+  const manager = new PairingManager({
+    authDir: '/tmp/auth',
+    loadAuthState: async () => ({ state: { creds: { registered: false } }, saveCreds: async () => {} }),
+    fetchLatestVersion: async () => ({ version: [2, 3000, 1] }),
+    createSocket: (options) => { socketOptions = options; return { ev: events }; }
+  });
+  await manager.start('qr');
+  assert.deepEqual(socketOptions.version, [2, 3000, 1]);
+});
