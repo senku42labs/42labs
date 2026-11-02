@@ -26,13 +26,25 @@ test('QR mode exposes the QR payload when WhatsApp emits it', async () => {
   assert.equal(manager.publicStatus().qr, 'qr-payload');
 });
 
-test('phone-code mode requests its code immediately without waiting for a QR event', async () => {
-  const { manager, calls } = createHarness();
+test('phone-code mode waits for the socket connecting event before requesting a code', async () => {
+  const { manager, events, calls } = createHarness();
   await manager.start('code', '263771234567');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(calls, []);
+  events.emit('connection.update', { connection: 'connecting' });
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(calls, ['263771234567']);
   assert.equal(manager.publicStatus().status, 'code_ready');
   assert.equal(manager.publicStatus().pairingCode, 'ABCD-1234');
+});
+
+test('phone-code mode requests a code only once when connecting is emitted repeatedly', async () => {
+  const { manager, events, calls } = createHarness();
+  await manager.start('code', '263771234567');
+  events.emit('connection.update', { connection: 'connecting' });
+  events.emit('connection.update', { connection: 'connecting' });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(calls, ['263771234567']);
 });
 
 test('logged-out connection close exposes an actionable error instead of reconnecting stale credentials', async () => {
