@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
-import makeWASocket, { useMultiFileAuthState } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
 
@@ -11,6 +11,7 @@ const authDir = process.env.AUTH_DIR || '/data/whatsapp-auth';
 const manager = new PairingManager({
   loadAuthState: useMultiFileAuthState,
   createSocket: (options) => makeWASocket(options),
+  fetchLatestVersion: fetchLatestBaileysVersion,
   authDir
 });
 
