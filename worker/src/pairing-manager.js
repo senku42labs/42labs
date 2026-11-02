@@ -65,7 +65,8 @@ export class PairingManager {
     if (generation !== this.generation) return;
     const options = {
       auth: auth.state,
-      browser: ['RIMURU TEMPEST MD', 'safari', '1.0.0'],
+      // Match the Chrome desktop identity used by the working 42 MD BOT connection.
+      browser: ['RIMURU TEMPEST MD', 'Chrome', '1.0.0'],
       markOnlineOnConnect: false,
       syncFullHistory: false,
       ...(latest?.version ? { version: latest.version } : {})
@@ -77,7 +78,6 @@ export class PairingManager {
       if (generation !== this.generation) return;
       this.handleConnectionUpdate(update, mode, generation);
     });
-
   }
 
   async requestPhonePairingCode(socket = this.socket, generation = this.generation) {
@@ -99,8 +99,9 @@ export class PairingManager {
   }
 
   handleConnectionUpdate(update, mode, generation) {
-    // Wait until the WebSocket is actually connecting before asking WhatsApp for a pairing code.
-    if (update.connection === 'connecting' && mode === 'code') {
+    // Baileys emits a QR update in pairing-code mode too. Use that socket-ready
+    // event as the trigger; requesting a code earlier can race the Noise handshake.
+    if (update.qr && mode === 'code') {
       void this.requestPhonePairingCode(this.socket, generation);
     }
     if (update.qr && mode === 'qr') {
