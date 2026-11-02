@@ -1,14 +1,76 @@
-import http from "node:http";
+import http from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
+import makeWASocket, { useMultiFileAuthState } from '@whiskeysockets/baileys';
+import { PairingManager } from './pairing-manager.js';
+import { normalizePhoneNumber } from './phone.js';
 
 const port = Number(process.env.PORT || 3000);
-const server = http.createServer((req, res) => {
-  if (req.url === "/health" || req.url === "/") {
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ service: "RIMURU TEMPEST MD", status: "healthy", whatsapp: "not-connected" }));
-    return;
-  }
-  res.writeHead(404, { "content-type": "application/json" });
-  res.end(JSON.stringify({ error: "Not found" }));
+const apiKey = process.env.RIMURU_API_KEY || '';
+const authDir = process.env.AUTH_DIR || '/data/whatsapp-auth';
+const manager = new PairingManager({
+  loadAuthState: useMultiFileAuthState,
+  createSocket: (options) => makeWASocket(options),
+  authDir
 });
 
-server.listen(port, "0.0.0.0", () => console.log(`RIMURU TEMPEST MD worker listening on ${port}`));
+function authorized(req) {
+  const supplied = req.headers.authorization?.replace(/^Bearer\\s+/i, '') || '';
+  const expected = Buffer.from(apiKey);
+  const actual = Buffer.from(supplied);
+  return Boolean(apiKey) && expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+async function readJson(req) {
+  let body = '';
+  for await (const chunk of req) {
+    body += chunk;
+    if (body.length > 4096) throw new Error('Request body too large.');
+  }
+  if (!body) return {};
+  try { return JSON.parse(body); } catch { throw new Error('Request body must be valid JSON.'); }
+}
+
+function send(res, status, payload) {
+  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+  res.end(JSON.stringify(payload));
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
+    return send(res, 200, { service: 'RIMURU TEMPEST MD', status: 'healthy', whatsapp: manager.publicStatus().status });
+  }
+  if (!url.pathname.startsWith('/api/')) return send(res, 404, { error: 'Not found' });
+  if (!authorized(req)) return send(res, 401, { error: 'Unauthorized' });
+
+  try {
+    if (req.method === 'GET' && url.pathname === '/api/status') {
+      return send(res, 200, manager.publicStatus());
+    }
+    if (req.method === 'POST' && url.pathname === '/api/pairing/qr') {
+      await manager.start('qr');
+      return send(res, 202, { message: 'QR pairing started. Poll /api/status for the QR payload.', ...manager.publicStatus() });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/pairing/code') {
+      const body = await readJson(req);
+      const phone = normalizePhoneNumber(body.phone);
+      await manager.start('code', phone);
+      const code = await manager.waitForPairingCode();
+      return send(res, 200, { message: 'Enter this code in WhatsApp → Linked Devices → Link a Device → Link with phone number instead.', phone, code });
+    }
+    return send(res, 404, { error: 'Not found' });
+  } catch (error) {
+    const message = error?.message || 'Request failed.';
+    const status = /already active/.test(message) ? 409 : /8–15 digits|Phone number/.test(message) ? 400 : 500;
+    return send(res, status, { error: message });
+  }
+});
+
+await mkdir(authDir, { recursive: true });
+try {
+  await manager.restore();
+} catch (error) {
+  console.error('WhatsApp session restore failed:', error?.message || error);
+}
+server.listen(port, '0.0.0.0', () => console.log(`RIMURU TEMPEST MD worker listening on ${port}`));
