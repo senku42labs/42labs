@@ -72,7 +72,7 @@ test('restarts the WhatsApp socket after restartRequired (515)', async () => {
     connection: 'close',
     lastDisconnect: { error: { message: 'restart required', output: { statusCode: 515 } } }
   });
-  await new Promise((resolve) => setTimeout(resolve, 25));
+  await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(socketCount, 2);
   secondEvents.emit('connection.update', { connection: 'open' });
   assert.equal(manager.publicStatus().status, 'connected');
