@@ -46,25 +46,36 @@ export class PairingManager {
     });
     this.socket.ev.on('creds.update', this.saveCreds);
     this.socket.ev.on('connection.update', (update) => this.handleConnectionUpdate(update, mode));
+
+    // Baileys' documented pairing-code flow requests the code directly after
+    // creating the socket; it does not wait for a QR event.
+    if (mode === 'code') void this.requestPhonePairingCode();
+  }
+
+  async requestPhonePairingCode() {
+    if (this.codeRequested || !this.socket || !this.state.phone) return;
+    this.codeRequested = true;
+    try {
+      const code = await this.socket.requestPairingCode(this.state.phone);
+      if (this.state.status === 'connecting') {
+        this.state.status = 'code_ready';
+        this.state.pairingCode = code;
+        this.state.lastError = null;
+        this.resolveCodeWaiters(code);
+      }
+    } catch (error) {
+      this.state.status = 'error';
+      this.state.pairingCode = null;
+      this.state.lastError = error?.message || 'WhatsApp could not issue a pairing code.';
+      this.rejectCodeWaiters(error);
+    }
   }
 
   async handleConnectionUpdate(update, mode) {
     if (update.qr && mode === 'qr') {
       this.state.status = 'qr_ready';
       this.state.qr = update.qr;
-    }
-    if (update.qr && mode === 'code' && !this.codeRequested) {
-      this.codeRequested = true;
-      try {
-        const code = await this.socket.requestPairingCode(this.state.phone);
-        this.state.status = 'code_ready';
-        this.state.pairingCode = code;
-        this.resolveCodeWaiters(code);
-      } catch (error) {
-        this.state.status = 'error';
-        this.state.lastError = 'Could not request a WhatsApp pairing code.';
-        this.rejectCodeWaiters(error);
-      }
+      this.state.lastError = null;
     }
     if (update.connection === 'open') {
       this.state.status = 'connected';
@@ -74,9 +85,12 @@ export class PairingManager {
       this.resolveCodeWaiters(null);
     }
     if (update.connection === 'close') {
-      this.state.status = 'disconnected';
+      const reason = update.lastDisconnect?.error?.message || 'WhatsApp connection closed before pairing completed.';
+      this.state.status = 'error';
       this.state.qr = null;
       this.state.pairingCode = null;
+      this.state.lastError = reason;
+      this.rejectCodeWaiters(new Error(reason));
     }
   }
 
