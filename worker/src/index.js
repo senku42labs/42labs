@@ -56,8 +56,10 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const phone = normalizePhoneNumber(body.phone);
       await manager.start('code', phone);
-      const code = await manager.waitForPairingCode();
-      return send(res, 200, { message: 'Enter this code in WhatsApp → Linked Devices → Link a Device → Link with phone number instead.', phone, code });
+      return send(res, 202, {
+        message: 'Pairing started. Poll /api/status for the WhatsApp-issued pairing code.',
+        ...manager.publicStatus()
+      });
     }
     return send(res, 404, { error: 'Not found' });
   } catch (error) {
