@@ -35,12 +35,15 @@ test('phone-code mode requests its code immediately without waiting for a QR eve
   assert.equal(manager.publicStatus().pairingCode, 'ABCD-1234');
 });
 
-test('connection close exposes an error instead of leaving pairing in a waiting state', async () => {
+test('logged-out connection close exposes an actionable error instead of reconnecting stale credentials', async () => {
   const { manager, events } = createHarness();
   await manager.start('qr');
-  events.emit('connection.update', { connection: 'close', lastDisconnect: { error: new Error('Connection Failure') } });
+  events.emit('connection.update', {
+    connection: 'close',
+    lastDisconnect: { error: { message: 'Connection Failure', output: { statusCode: 401 } } }
+  });
   assert.equal(manager.publicStatus().status, 'error');
-  assert.match(manager.publicStatus().lastError, /Connection Failure/);
+  assert.match(manager.publicStatus().lastError, /401.*Connection Failure/);
 });
 
 test('connected event clears temporary pairing credentials', async () => {
