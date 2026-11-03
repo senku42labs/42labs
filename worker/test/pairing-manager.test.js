@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PairingManager } from '../src/pairing-manager.js';
 
-function createHarness({ registered = false, pairingCode = 'ABCD-1234' } = {}) {
+function createHarness({ registered = false, pairingCode = 'ABCD-1234', clearAuthState } = {}) {
   const events = new EventEmitter();
   const calls = [];
   const socket = {
@@ -13,7 +13,8 @@ function createHarness({ registered = false, pairingCode = 'ABCD-1234' } = {}) {
   const manager = new PairingManager({
     authDir: '/tmp/auth',
     loadAuthState: async () => ({ state: { creds: { registered } }, saveCreds: async () => {} }),
-    createSocket: () => socket
+    createSocket: () => socket,
+    clearAuthState
   });
   return { manager, events, socket, calls };
 }
@@ -135,4 +136,17 @@ test('dispatches incoming Baileys text commands to the bot command engine', asyn
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(sent.length, 1);
   assert.equal(sent[0][1].text, '🏓 Pong! RIMURU is responding.');
+});
+
+
+test('clears logged-out credentials before a fresh pairing attempt', async () => {
+  let cleared = 0;
+  const { manager } = createHarness({ clearAuthState: async () => { cleared += 1; } });
+  manager.state = {
+    status: 'error', qr: null, pairingCode: null, phone: '263771234567',
+    lastError: 'WhatsApp ended or replaced this session (401): Connection Failure'
+  };
+  await manager.start('code', '263771234567');
+  assert.equal(cleared, 1);
+  assert.equal(manager.publicStatus().status, 'connecting');
 });
