@@ -1,10 +1,11 @@
 import { handleIncomingMessage } from './command-engine.js';
 export class PairingManager {
-  constructor({ loadAuthState, createSocket, authDir, fetchLatestVersion = async () => null }) {
+  constructor({ loadAuthState, createSocket, authDir, fetchLatestVersion = async () => null, clearAuthState = async () => {} }) {
     this.loadAuthState = loadAuthState;
     this.createSocket = createSocket;
     this.authDir = authDir;
     this.fetchLatestVersion = fetchLatestVersion;
+    this.clearAuthState = clearAuthState;
     this.socket = null;
     this.mode = null;
     this.state = { status: 'disconnected', qr: null, pairingCode: null, phone: null, lastError: null };
@@ -35,6 +36,12 @@ export class PairingManager {
     this.mode = mode;
     this.retryCount = 0;
     this.codeRequested = false;
+    const previousError = this.state.lastError || '';
+    if (this.state.status === 'error' && /(?:status\s*code\s*)?401/.test(previousError)) {
+      // A 401 means WhatsApp invalidated this login. Retrying against the same
+      // registered creds only repeats the failure; start with a clean auth state.
+      await this.clearAuthState(this.authDir);
+    }
     this.state = { status: 'connecting', qr: null, pairingCode: null, phone, lastError: null };
     const auth = await this.loadAuthState(this.authDir);
     if (auth.state.creds.registered) {
