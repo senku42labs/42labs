@@ -27,14 +27,14 @@ export async function GET() {
   try {
     const pool=db();
     const [serversResult,commands,settings,audit,secrets] = await Promise.all([
-      pool.query("SELECT s.id,s.name,s.worker_url,s.status,s.capacity,s.active_dashboard_users,s.paired_whatsapp_accounts,s.last_heartbeat_at,s.created_at,s.railway_volume_id,(SELECT count(*)::int FROM rimuru_user_presence p WHERE p.server_id=s.id AND p.session_expires_at>now()) AS active_dashboard_users FROM rimuru_servers s ORDER BY s.created_at"),
+      pool.query("SELECT s.id,s.name,s.worker_url,s.status,s.capacity,s.paired_whatsapp_accounts,s.last_heartbeat_at,s.created_at,s.railway_volume_id,(SELECT count(*)::int FROM rimuru_user_presence p WHERE p.server_id=s.id AND p.session_expires_at>now()) AS active_dashboard_users FROM rimuru_servers s ORDER BY s.created_at"),
       pool.query("SELECT command_name,category,description,enabled,handler_type,config,updated_at FROM rimuru_command_catalog ORDER BY category,command_name"),
       pool.query("SELECT setting_key,setting_value,updated_at FROM rimuru_bot_settings ORDER BY setting_key"),
       pool.query("SELECT actor_id,action,server_id,details,created_at FROM rimuru_server_audit ORDER BY created_at DESC LIMIT 12"),
       pool.query("SELECT server_id,encrypted_api_key FROM rimuru_server_secrets")
     ]);
     await refreshServerFleet(pool,serversResult.rows,secrets.rows);
-    const fresh=await pool.query("SELECT id,name,worker_url,status,capacity,active_dashboard_users,paired_whatsapp_accounts,last_heartbeat_at,created_at,railway_volume_id FROM rimuru_servers ORDER BY created_at");
+    const fresh=await pool.query("SELECT s.id,s.name,s.worker_url,s.status,s.capacity,(SELECT count(*)::int FROM rimuru_user_presence p WHERE p.server_id=s.id AND p.session_expires_at>now()) AS active_dashboard_users,s.paired_whatsapp_accounts,s.last_heartbeat_at,s.created_at,s.railway_volume_id FROM rimuru_servers s ORDER BY s.created_at");
     return NextResponse.json({servers:fresh.rows,commands:commands.rows,settings:settings.rows,audit:audit.rows});
   } catch(e) { return NextResponse.json({error:e instanceof Error?e.message:"Database query failed."},{status:500}); }
 }
