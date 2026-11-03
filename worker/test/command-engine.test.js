@@ -52,3 +52,19 @@ test('rejects invalid command prefixes and unknown command names', () => {
   assert.throws(() => updateCommandConfig({ enabled: ['not-a-command'] }), /registered/);
   updateCommandConfig(original);
 });
+
+test('executes offline Knightbot-inspired entertainment commands', async () => {
+  const sent = [];
+  const sock = { sendMessage: async (...args) => sent.push(args) };
+  for (const command of ['joke','fact','compliment','truth','dare','goodnight','goodmorning','quote']) {
+    const result = await handleIncomingMessage(sock, {
+      key: { remoteJid: '123@s.whatsapp.net' }, message: { conversation: `.${command}` }
+    });
+    assert.equal(result.handled, true, command);
+  }
+  const eight = await handleIncomingMessage(sock, {
+    key: { remoteJid: '123@s.whatsapp.net' }, message: { conversation: '.8ball Will it rain?' }
+  });
+  assert.equal(eight.handled, true);
+  assert.equal(sent.length, 9);
+});
