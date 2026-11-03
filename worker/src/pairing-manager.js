@@ -80,7 +80,6 @@ export class PairingManager {
       for (const message of update.messages) {
         try {
           await handleIncomingMessage(socket, message, {
-            prefix: process.env.COMMAND_PREFIX || '.',
             botName: process.env.RIMURU_BOT_NAME || 'RIMURU TEMPEST MD',
             version: process.env.RIMURU_BOT_VERSION || '1.0.0'
           });
