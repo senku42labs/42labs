@@ -21,6 +21,26 @@ const COMMANDS = {
   pair: async () => 'To link a WhatsApp account, use the official RIMURU pairing dashboard. Pairing codes are issued by your own Baileys session; do not use third-party pairing services.'
 };
 
+let runtimeConfig = { prefix: process.env.COMMAND_PREFIX || '.', enabled: new Set(Object.keys(COMMANDS)) };
+
+export function getCommandConfig() {
+  return { prefix: runtimeConfig.prefix, enabled: [...runtimeConfig.enabled] };
+}
+
+export function updateCommandConfig(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Command config must be an object.');
+  const prefix = input.prefix ?? runtimeConfig.prefix;
+  const enabled = input.enabled ?? [...runtimeConfig.enabled];
+  if (typeof prefix !== 'string' || prefix.length < 1 || prefix.length > 3 || /\\s/.test(prefix)) {
+    throw new Error('Command prefix must be 1–3 non-space characters.');
+  }
+  if (!Array.isArray(enabled) || enabled.some((name) => typeof name !== 'string' || !Object.hasOwn(COMMANDS, name))) {
+    throw new Error('Enabled commands must contain only registered command names.');
+  }
+  runtimeConfig = { prefix, enabled: new Set(enabled) };
+  return getCommandConfig();
+}
+
 export function extractMessageText(message) {
   const m = message?.message || {};
   return (m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption ||
@@ -40,9 +60,9 @@ export function parseCommand(message, prefix = '.') {
 
 export async function handleIncomingMessage(sock, message, settings = {}) {
   if (!message?.message || message.key?.fromMe || message.key?.remoteJid === 'status@broadcast') return { handled: false };
-  const prefix = settings.prefix || process.env.COMMAND_PREFIX || '.';
+  const prefix = settings.prefix || runtimeConfig.prefix;
   const parsed = parseCommand(message, prefix);
-  if (!parsed || !Object.hasOwn(COMMANDS, parsed.name)) return { handled: false };
+  if (!parsed || !Object.hasOwn(COMMANDS, parsed.name) || !runtimeConfig.enabled.has(parsed.name)) return { handled: false };
   const chatId = message.key?.remoteJid;
   if (!chatId) return { handled: false };
   const context = { sock, message, chatId, args: parsed.args,
