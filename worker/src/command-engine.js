@@ -6,13 +6,22 @@ const COMMANDS = {
     return `🌪️ *${settings.botName || 'RIMURU TEMPEST MD'} — COMMANDS*\n\n` +
       [`${prefix}alive — bot status`, `${prefix}ping — connection response`, `${prefix}menu — command list`,
        `${prefix}help — command help`, `${prefix}time — current UTC time`, `${prefix}echo <text> — repeat text`,
-       `${prefix}groupinfo — group details`, `${prefix}pair — open the RIMURU pairing dashboard`].join('\n');
+       `${prefix}joke — a quick joke`, `${prefix}fact — random fact`, `${prefix}compliment — send positivity`, `${prefix}truth — truth prompt`, `${prefix}dare — friendly dare`, `${prefix}8ball <question> — ask the magic 8-ball`, `${prefix}goodnight — goodnight message`, `${prefix}goodmorning — greeting`, `${prefix}quote — motivational quote`, `${prefix}groupinfo — group details`, `${prefix}pair — open the RIMURU pairing dashboard`].join('\n');
   },
   help: async ({ settings, args }) => args
     ? `Help: use ${settings.prefix || '.'}${args.trim()} with its required arguments.`
     : COMMANDS.menu({ settings }),
   time: async () => `🕒 ${new Date().toISOString()} (UTC)`,
   echo: async ({ args }) => args ? args.slice(0, 500) : 'Usage: .echo <text>',
+  joke: async () => ['Why did the developer go broke? Because they used up all their cache.','Why do programmers prefer dark mode? Because light attracts bugs.','A SQL query walks into a bar and asks two tables: “Can I join you?”'][Math.floor(Math.random()*3)],
+  fact: async () => ['Octopuses have three hearts.','Honeybees can recognize human faces.','A day on Venus is longer than its year.'][Math.floor(Math.random()*3)],
+  compliment: async () => ['You bring good energy wherever you go.','Your creativity makes a difference.','You have a talent for making people smile.'][Math.floor(Math.random()*3)],
+  truth: async () => ['What is one goal you have never told anyone?','What is the kindest thing someone has done for you?','What is one fear you would like to overcome?'][Math.floor(Math.random()*3)],
+  dare: async () => ['Send a kind message to someone you appreciate.','Describe your day using only three emojis.','Share a fun fact about yourself.'][Math.floor(Math.random()*3)],
+  '8ball': async ({ args }) => args ? ['Definitely yes.','It is looking likely.','Ask again later.','The signs point to no.','Absolutely not.'][Math.floor(Math.random()*5)] : 'Usage: .8ball <question>',
+  goodnight: async () => '🌙 Good night! Rest well and wake up ready for a new day.',
+  goodmorning: async () => '☀️ Good morning! Wishing you a bright and productive day.',
+  quote: async () => ['“Great things are done by a series of small things brought together.” — Vincent van Gogh','“It always seems impossible until it is done.” — Nelson Mandela','“The secret of getting ahead is getting started.” — Mark Twain'][Math.floor(Math.random()*3)],
   groupinfo: async ({ sock, chatId }) => {
     if (!chatId.endsWith('@g.us')) return 'This command only works in a group.';
     const metadata = await sock.groupMetadata(chatId);
