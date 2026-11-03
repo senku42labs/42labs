@@ -1,13 +1,15 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
+import { getCommandConfig, updateCommandConfig, registeredCommands } from './command-engine.js';
 
 const port = Number(process.env.PORT || 3000);
 const apiKey = process.env.RIMURU_API_KEY || '';
 const authDir = process.env.AUTH_DIR || '/data/whatsapp-auth';
+const commandConfigPath = process.env.COMMAND_CONFIG_PATH || '/data/command-config.json';
 const manager = new PairingManager({
   loadAuthState: useMultiFileAuthState,
   createSocket: (options) => makeWASocket(options),
@@ -49,6 +51,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/status') {
       return send(res, 200, manager.publicStatus());
     }
+    if (req.method === 'GET' && url.pathname === '/api/commands/config') {
+      return send(res, 200, { ...getCommandConfig(), registeredCommands });
+    }
+    if (req.method === 'PUT' && url.pathname === '/api/commands/config') {
+      const body = await readJson(req);
+      const config = updateCommandConfig(body);
+      await writeFile(commandConfigPath, JSON.stringify(config), { mode: 0o600 });
+      return send(res, 200, { ok: true, ...config });
+    }
     if (req.method === 'POST' && url.pathname === '/api/pairing/qr') {
       await manager.start('qr');
       return send(res, 202, { message: 'QR pairing started. Poll /api/status for the QR payload.', ...manager.publicStatus() });
@@ -71,6 +82,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 await mkdir(authDir, { recursive: true });
+try {
+  const savedConfig = JSON.parse(await readFile(commandConfigPath, 'utf8'));
+  updateCommandConfig(savedConfig);
+} catch (error) {
+  if (error?.code !== 'ENOENT') console.error('Command config restore failed:', error?.message || error);
+}
 try {
   await manager.restore();
 } catch (error) {
