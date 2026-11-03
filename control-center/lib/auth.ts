@@ -13,13 +13,8 @@ export function makeSession() {
   const issued = String(Date.now());
   return issued + "." + signature(issued, secret);
 }
-export async function isAdmin() {
-  const secret = process.env.RIMURU_SESSION_SECRET || "";
-  if (secret.length < 32) return false;
+export function verifySessionToken(token: string) {\n  const secret = process.env.RIMURU_SESSION_SECRET || \"\";\n  if (secret.length < 32) return false;\n  const [issued, sig, extra] = token.split(\".\");\n  if (!issued || !sig || extra || !/^\\d+$/.test(issued) || Date.now() - Number(issued) > 8*60*60*1000 || Number(issued) > Date.now()+60000) return false;\n  const expected = Buffer.from(signature(issued,secret)); const actual = Buffer.from(sig);\n  return expected.length === actual.length && timingSafeEqual(expected,actual);\n}\nexport async function isAdmin() {
   const jar = await cookies(); const token = jar.get(COOKIE)?.value || "";
-  const [issued, sig, extra] = token.split(".");
-  if (!issued || !sig || extra || !/^\d+$/.test(issued) || Date.now() - Number(issued) > 8*60*60*1000 || Number(issued) > Date.now()+60000) return false;
-  const expected = Buffer.from(signature(issued,secret)); const actual = Buffer.from(sig);
-  return expected.length === actual.length && timingSafeEqual(expected,actual);
+  return verifySessionToken(token);
 }
 export const sessionCookieName = COOKIE;
