@@ -30,7 +30,8 @@ test('unknown commands are ignored without sending a message', async () => {
   assert.equal(result.handled,false); assert.equal(sent.length,0);
 });
 test('exports a command registry that includes Knightbot-inspired core commands', () => {
-  assert.deepEqual(registeredCommands,['alive','ping','menu','help','time','echo','groupinfo','pair']);
+  assert.equal(registeredCommands.length,17);
+  for (const name of ['alive','ping','menu','help','time','echo','groupinfo','pair','joke','fact','compliment','truth','dare','8ball','goodnight','goodmorning','quote']) assert.ok(registeredCommands.includes(name));
 });
 
 test('disabled commands stop executing until re-enabled', async () => {
