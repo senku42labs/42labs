@@ -1,6 +1,6 @@
 {
   "name": "rimuru-control-center",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "build": "next build",
@@ -12,5 +12,11 @@
     "next": "16.4.4",
     "react": "19.2.1",
     "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.3"
   }
 }
