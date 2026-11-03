@@ -31,7 +31,7 @@ export function updateCommandConfig(input = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Command config must be an object.');
   const prefix = input.prefix ?? runtimeConfig.prefix;
   const enabled = input.enabled ?? [...runtimeConfig.enabled];
-  if (typeof prefix !== 'string' || prefix.length < 1 || prefix.length > 3 || /\\s/.test(prefix)) {
+  if (typeof prefix !== 'string' || prefix.length < 1 || prefix.length > 3 || /\s/.test(prefix)) {
     throw new Error('Command prefix must be 1–3 non-space characters.');
   }
   if (!Array.isArray(enabled) || enabled.some((name) => typeof name !== 'string' || !Object.hasOwn(COMMANDS, name))) {
