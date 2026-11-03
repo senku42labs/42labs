@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
@@ -14,7 +14,8 @@ const manager = new PairingManager({
   loadAuthState: useMultiFileAuthState,
   createSocket: (options) => makeWASocket(options),
   fetchLatestVersion: fetchLatestBaileysVersion,
-  authDir
+  authDir,
+  clearAuthState: async (directory) => rm(directory, { recursive: true, force: true })
 });
 
 function authorized(req) {
