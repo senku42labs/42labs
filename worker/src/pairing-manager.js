@@ -1,3 +1,4 @@
+import { handleIncomingMessage } from './command-engine.js';
 export class PairingManager {
   constructor({ loadAuthState, createSocket, authDir, fetchLatestVersion = async () => null }) {
     this.loadAuthState = loadAuthState;
@@ -74,6 +75,20 @@ export class PairingManager {
     const socket = this.createSocket(options);
     this.socket = socket;
     socket.ev.on('creds.update', auth.saveCreds);
+    socket.ev.on('messages.upsert', async (update) => {
+      if (update.type !== 'notify' || !Array.isArray(update.messages)) return;
+      for (const message of update.messages) {
+        try {
+          await handleIncomingMessage(socket, message, {
+            prefix: process.env.COMMAND_PREFIX || '.',
+            botName: process.env.RIMURU_BOT_NAME || 'RIMURU TEMPEST MD',
+            version: process.env.RIMURU_BOT_VERSION || '1.0.0'
+          });
+        } catch (error) {
+          console.error('RIMURU message handler failed:', error?.message || error);
+        }
+      }
+    });
     socket.ev.on('connection.update', (update) => {
       if (generation !== this.generation) return;
       this.handleConnectionUpdate(update, mode, generation);
