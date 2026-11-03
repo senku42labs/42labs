@@ -17,7 +17,7 @@ export function verifySessionToken(token: string) {
   const secret = process.env.RIMURU_SESSION_SECRET || "";
   if (secret.length < 32) return false;
   const [issued, sig, extra] = token.split(".");
-  if (!issued || !sig || extra || !/^\\d+$/.test(issued) || Date.now() - Number(issued) > 8*60*60*1000 || Number(issued) > Date.now()+60000) return false;
+  if (!issued || !sig || extra || !/^\d+$/.test(issued) || Date.now() - Number(issued) > 8*60*60*1000 || Number(issued) > Date.now()+60000) return false;
   const expected = Buffer.from(signature(issued,secret)); const actual = Buffer.from(sig);
   return expected.length === actual.length && timingSafeEqual(expected,actual);
 }
