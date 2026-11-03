@@ -29,7 +29,7 @@ export async function PATCH(req:Request) {
       await pool.query("INSERT INTO rimuru_bot_settings(setting_key,setting_value,updated_by,updated_at) VALUES($1,$2::jsonb,'owner',now()) ON CONFLICT(setting_key) DO UPDATE SET setting_value=EXCLUDED.setting_value,updated_by='owner',updated_at=now()",[body.key,JSON.stringify(body.value)]);
     } else return NextResponse.json({error:"Invalid update."},{status:400});
 
-    const workerUrl=process.env.RIMURU_WORKER_URL?.replace(/\\/$/,"");
+    const workerUrl=process.env.RIMURU_WORKER_URL?.replace(/\/$/,"");
     const workerKey=process.env.RIMURU_API_KEY;
     if(workerUrl && workerKey && (body.kind==="command" || (body.kind==="setting" && body.key==="prefix"))) {
       const configResponse=await fetch(workerUrl+"/api/commands/config",{headers:{Authorization:"Bearer "+workerKey},cache:"no-store"});
