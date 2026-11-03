@@ -118,3 +118,21 @@ test('uses the dynamically fetched WhatsApp Web version when creating a socket',
   await manager.start('qr');
   assert.deepEqual(socketOptions.version, [2, 3000, 1]);
 });
+
+test('dispatches incoming Baileys text commands to the bot command engine', async () => {
+  const events = new EventEmitter();
+  const sent = [];
+  const manager = new PairingManager({
+    authDir: '/tmp/auth',
+    loadAuthState: async () => ({ state: { creds: { registered: false } }, saveCreds: async () => {} }),
+    createSocket: () => ({ ev: events, sendMessage: async (...args) => sent.push(args) })
+  });
+  await manager.start('qr');
+  events.emit('messages.upsert', {
+    type: 'notify',
+    messages: [{ key: { remoteJid: '263771234567@s.whatsapp.net' }, message: { conversation: '.ping' } }]
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0][1].text, '🏓 Pong! RIMURU is responding.');
+});
