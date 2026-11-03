@@ -1,13 +1,15 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
+import { getCommandConfig, updateCommandConfig, registeredCommands } from './command-engine.js';
 
 const port = Number(process.env.PORT || 3000);
 const apiKey = process.env.RIMURU_API_KEY || '';
 const authDir = process.env.AUTH_DIR || '/data/whatsapp-auth';
+const commandConfigPath = process.env.COMMAND_CONFIG_PATH || '/data/command-config.json';
 const manager = new PairingManager({
   loadAuthState: useMultiFileAuthState,
   createSocket: (options) => makeWASocket(options),
@@ -71,6 +73,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 await mkdir(authDir, { recursive: true });
+try {
+  const savedConfig = JSON.parse(await readFile(commandConfigPath, 'utf8'));
+  updateCommandConfig(savedConfig);
+} catch (error) {
+  if (error?.code !== 'ENOENT') console.error('Command config restore failed:', error?.message || error);
+}
 try {
   await manager.restore();
 } catch (error) {
