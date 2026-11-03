@@ -24,7 +24,7 @@ export async function POST(req:Request) {
     const body=await req.json(); const name=String(body.name||"").trim().slice(0,48);
     if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,47}$/.test(name)) return NextResponse.json({error:"Server name must be 3–48 letters, numbers, spaces, _ or -."},{status:400});
     const apiKey=randomBytes(32).toString("hex");
-    const created=await railway(token,`mutation($input: ServiceCreateInput!){serviceCreate(input:$input){id name}}`,{input:{projectId,name,source:{repo}}});
+    const created=await railway(token,`mutation($input: ServiceCreateInput!){serviceCreate(input:$input){id name}}`,{input:{projectId,environmentId,name,source:{repo}}});
     const service=created.serviceCreate; serviceId=service?.id;
     if(!serviceId) throw new Error("Railway did not return a service id.");
     await railway(token,`mutation($id:String!,$input:ServiceConnectInput!){serviceConnect(id:$id,input:$input){id}}`,{id:serviceId,input:{repo,branch}});
