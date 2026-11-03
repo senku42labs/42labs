@@ -51,6 +51,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/status') {
       return send(res, 200, manager.publicStatus());
     }
+    if (req.method === 'GET' && url.pathname === '/api/commands/config') {
+      return send(res, 200, { ...getCommandConfig(), registeredCommands });
+    }
+    if (req.method === 'PUT' && url.pathname === '/api/commands/config') {
+      const body = await readJson(req);
+      const config = updateCommandConfig(body);
+      await writeFile(commandConfigPath, JSON.stringify(config), { mode: 0o600 });
+      return send(res, 200, { ok: true, ...config });
+    }
     if (req.method === 'POST' && url.pathname === '/api/pairing/qr') {
       await manager.start('qr');
       return send(res, 202, { message: 'QR pairing started. Poll /api/status for the QR payload.', ...manager.publicStatus() });
