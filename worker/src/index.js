@@ -19,10 +19,7 @@ const manager = new PairingManager({
 });
 
 function authorized(req) {
-  const supplied = req.headers.authorization?.replace(/^Bearer\\s+/i, '') || '';
-  const expected = Buffer.from(apiKey);
-  const actual = Buffer.from(supplied);
-  return Boolean(apiKey) && expected.length === actual.length && timingSafeEqual(expected, actual);
+  return isAuthorized(req.headers.authorization, apiKey);
 }
 
 async function readJson(req) {
