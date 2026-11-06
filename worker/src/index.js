@@ -1,8 +1,8 @@
 import http from 'node:http';
-import { timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import makeWASocket, { useMultiFileAuthState, resolveWaWebVersion } from '@chaeulso/baileys';
 import { PairingManager } from './pairing-manager.js';
+import { isAuthorized } from './auth.js';
 import { normalizePhoneNumber } from './phone.js';
 import { getCommandConfig, updateCommandConfig, registeredCommands } from './command-engine.js';
 
