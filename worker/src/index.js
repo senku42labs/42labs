@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@chaeulso/baileys';
+import makeWASocket, { useMultiFileAuthState, resolveWaWebVersion } from '@chaeulso/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
 import { getCommandConfig, updateCommandConfig, registeredCommands } from './command-engine.js';
@@ -13,7 +13,7 @@ const commandConfigPath = process.env.COMMAND_CONFIG_PATH || '/data/command-conf
 const manager = new PairingManager({
   loadAuthState: useMultiFileAuthState,
   createSocket: (options) => makeWASocket(options),
-  fetchLatestVersion: fetchLatestBaileysVersion,
+  fetchLatestVersion: () => resolveWaWebVersion({ cachePath: `${authDir}/wa-version.json` }),
   authDir,
   clearAuthState: async (directory) => rm(directory, { recursive: true, force: true })
 });
