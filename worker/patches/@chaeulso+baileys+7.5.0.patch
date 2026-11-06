@@ -1,16 +1,16 @@
 diff --git a/node_modules/@chaeulso/baileys/lib/Socket/socket.js b/node_modules/@chaeulso/baileys/lib/Socket/socket.js
 --- a/node_modules/@chaeulso/baileys/lib/Socket/socket.js
 +++ b/node_modules/@chaeulso/baileys/lib/Socket/socket.js
-@@
+@@ -382,1 +382,1 @@
 -        if (!creds.me) {
 +        if (!creds.me || (!!creds.pairingCode && !creds.registered)) {
-@@
+@@ -770,1 +770,1 @@
 -                                        content: '0'
 +                                        content: Buffer.alloc(1)
 diff --git a/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js b/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
 --- a/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
 +++ b/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
-@@
+@@ -880,3 +880,7 @@
              case 'link_code_companion_reg':
                  const linkCodeCompanionReg = getBinaryNodeChild(node, 'link_code_companion_reg');
 +                // WhatsApp first sends a preliminary companion_hello notification
@@ -21,7 +21,7 @@ diff --git a/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js b/node_m
 diff --git a/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js b/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
 --- a/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
 +++ b/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
-@@
+@@ -192,6 +192,7 @@
      const authUpdate = {
          account,
          me: { id: jid, name: bizName, lid },
