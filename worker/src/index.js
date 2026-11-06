@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion } from '@chaeulso/baileys';
 import { PairingManager } from './pairing-manager.js';
 import { normalizePhoneNumber } from './phone.js';
 import { getCommandConfig, updateCommandConfig, registeredCommands } from './command-engine.js';
@@ -19,7 +19,7 @@ const manager = new PairingManager({
 });
 
 function authorized(req) {
-  const supplied = req.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
+  const supplied = req.headers.authorization?.replace(/^Bearer\\s+/i, '') || '';
   const expected = Buffer.from(apiKey);
   const actual = Buffer.from(supplied);
   return Boolean(apiKey) && expected.length === actual.length && timingSafeEqual(expected, actual);
