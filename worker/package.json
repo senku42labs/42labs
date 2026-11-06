@@ -6,10 +6,12 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test",
-    "prestart": "npm test"
+    "prestart": "npm test",
+    "postinstall": "patch-package"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "6.7.24"
+    "@chaeulso/baileys": "7.5.0",
+    "patch-package": "^8.0.0"
   },
   "engines": {
     "node": ">=22"
