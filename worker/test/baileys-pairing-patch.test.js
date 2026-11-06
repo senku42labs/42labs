@@ -7,8 +7,7 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('RIMURU imports the patched Baileys package', async () => {
   const entry = await readFile(new URL('../src/index.js', import.meta.url), 'utf8');
-  assert.match(entry, /from '@chaeulso\/baileys'/);
-});
+  assert.match(entry, /resolveWaWebVersion/);\n  assert.match(entry, /cachePath: `\\$\\{authDir\\}\/wa-version\\.json`/);\n});
 
 test('Baileys QR refresh handler is present and preserves the active QR ref', async () => {
   const socket = await read('Socket/socket.js');
