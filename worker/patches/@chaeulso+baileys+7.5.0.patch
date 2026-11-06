@@ -1,0 +1,32 @@
+diff --git a/node_modules/@chaeulso/baileys/lib/Socket/socket.js b/node_modules/@chaeulso/baileys/lib/Socket/socket.js
+--- a/node_modules/@chaeulso/baileys/lib/Socket/socket.js
++++ b/node_modules/@chaeulso/baileys/lib/Socket/socket.js
+@@
+-        if (!creds.me) {
++        if (!creds.me || (!!creds.pairingCode && !creds.registered)) {
+@@
+-                                        content: '0'
++                                        content: Buffer.alloc(1)
+diff --git a/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js b/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
+--- a/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
++++ b/node_modules/@chaeulso/baileys/lib/Socket/messages-recv.js
+@@
+             case 'link_code_companion_reg':
+                 const linkCodeCompanionReg = getBinaryNodeChild(node, 'link_code_companion_reg');
++                // WhatsApp first sends a preliminary companion_hello notification
++                // without the crypto fields. Only primary_hello contains the key material.
++                if (linkCodeCompanionReg?.attrs?.stage !== 'primary_hello')
++                    break;
+                 const ref = toRequiredBuffer(getBinaryNodeChildBuffer(linkCodeCompanionReg, 'link_code_pairing_ref'));
+diff --git a/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js b/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
+--- a/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
++++ b/node_modules/@chaeulso/baileys/lib/Utils/validate-connection.js
+@@
+     const authUpdate = {
+         account,
+         me: { id: jid, name: bizName, lid },
+         signalIdentities: [...(signalIdentities || []), identity],
+-        platform: platformNode?.attrs.name
++        platform: platformNode?.attrs.name,
++        registered: true
+     };
