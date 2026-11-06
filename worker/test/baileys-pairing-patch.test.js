@@ -5,9 +5,12 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../node_modules/@chaeulso/baileys/lib/', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('RIMURU imports the patched Baileys package', async () => {
+test('RIMURU imports the patched Baileys package and persistent version resolver', async () => {
   const entry = await readFile(new URL('../src/index.js', import.meta.url), 'utf8');
-  assert.match(entry, /resolveWaWebVersion/);\n  assert.match(entry, /cachePath: `\\$\\{authDir\\}\/wa-version\\.json`/);\n});
+  assert.ok(entry.includes("from '@chaeulso/baileys'"));
+  assert.ok(entry.includes('resolveWaWebVersion'));
+  assert.ok(entry.includes('wa-version.json'));
+});
 
 test('Baileys QR refresh handler is present and preserves the active QR ref', async () => {
   const socket = await read('Socket/socket.js');
